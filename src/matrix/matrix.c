@@ -47,3 +47,39 @@ void free_matrix(Matrix *matrix){
     free(matrix->data);
     free(matrix);
 }
+
+Matrix* load_matrix_from_file(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        perror("Ошибка открытия файла");
+        return NULL;
+    }
+
+    int rows, cols;
+    if (fscanf(file, "%d %d", &rows, &cols) != 2 || rows <= 0 || cols <= 0) {
+        fclose(file);
+        fprintf(stderr, "Ошибка чтения размеров матрицы\n");
+        return NULL;
+    }
+
+    Matrix* matrix = create_matrix(rows, cols);
+    if (!matrix) {
+        fclose(file);
+        fprintf(stderr, "Ошибка выделения памяти для матрицы\n");
+        return NULL;
+    }
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (fscanf(file, "%lf", &matrix->data[i][j]) != 1) {
+                fprintf(stderr, "Ошибка чтения элемента матрицы [%d][%d]\n", i, j);
+                free_matrix(matrix);
+                fclose(file);
+                return NULL;
+            }
+        }
+    }
+
+    fclose(file);
+    return matrix;
+}
