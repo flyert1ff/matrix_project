@@ -83,3 +83,17 @@ Matrix* load_matrix_from_file(const char* filename) {
     fclose(file);
     return matrix;
 }
+void print_matrix(const Matrix* matrix) {
+    if (!matrix) {
+        printf("Матрица не существует!\n");
+        return;
+    }
+
+    printf("Матрица %dx%d:\n", matrix->rows, matrix->cols);
+    for (int i = 0; i < matrix->rows; i++) {
+        for (int j = 0; j < matrix->cols; j++) {
+            printf("%8.2lf ", matrix->data[i][j]);  // Красивый формат вывода
+        }
+        printf("\n");
+    }
+}
