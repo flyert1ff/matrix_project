@@ -17,6 +17,7 @@ Matrix *create_matrix(int rows, int cols)
     matrix->data = (MATRIX_TYPE**)malloc(rows * sizeof(MATRIX_TYPE*));
 
     if(!matrix->data){
+        free(matrix);
         flag = 3;
     }
 
@@ -30,27 +31,21 @@ Matrix *create_matrix(int rows, int cols)
             flag = 4;
         }
     }
-    switch (flag)
-    {
-    case 1:
-        printf("Empty matrix");
-        return NULL;
-        break;
-    case 2:
-        printf("allocation error - 1");
-        return NULL;
-        break;
-    case 3:
-        printf("allocation error - 2");
-        return NULL;
-        break;
-    case 4:
-        printf("allocation error - 3");
-        return NULL;
-        break;
-    default:
-        return matrix;
-        break;
+    switch (flag) {
+        case 1:
+            printf("Ошибка: некорректные размеры матрицы\n");
+            return NULL;
+        case 2:
+            printf("Ошибка выделения памяти (структура)\n");
+            return NULL;
+        case 3:
+            printf("Ошибка выделения памяти (указатели)\n");
+            return NULL;
+        case 4:
+            printf("Ошибка выделения памяти (данные)\n");
+            return NULL;
+        default:
+            return matrix;
     }
 }
 
@@ -94,30 +89,23 @@ Matrix* load_matrix_from_file(const char* filename) {
             }
         }
     }
-
     fclose(file);
-    switch (flag)
-    {
-    case 1:
-        perror("Ошибка открытия файла");
-        return NULL;
-        break;
-    case 2:
-        fprintf(stderr, "Ошибка чтения размеров матрицы\n");
-        return NULL;
-        break;
-    case 3:
-        fprintf(stderr, "Ошибка выделения памяти для матрицы\n");
-        return NULL;
-        break;
-    case 4: 
-        fprintf(stderr, "Ошибка чтения элемента матрицы [%d][%d]\n", rows_1, cols_1);
-        free_matrix(matrix);
-        return NULL;
-        break;
-    default:
-        return matrix;
-        break;
+    switch (flag) {
+        case 1:
+            perror("Ошибка открытия файла");
+            return NULL;
+        case 2:
+            fprintf(stderr, "Ошибка чтения размеров матрицы\n");
+            return NULL;
+        case 3:
+            fprintf(stderr, "Ошибка выделения памяти\n");
+            return NULL;
+        case 4:
+            fprintf(stderr, "Ошибка чтения данных матрицы\n");
+            free_matrix(matrix);
+            return NULL;
+        default:
+            return matrix;
     }
 }
 void print_matrix(const Matrix* matrix) {
