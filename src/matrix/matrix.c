@@ -135,15 +135,14 @@ void print_matrix(const Matrix* matrix) {
     }
 }
 int save_matrix_to_file(const Matrix* matrix, const char* filename) {
+    int flag = 0;
     if (!matrix) {
-        fprintf(stderr, "Ошибка: матрица не существует!\n");
-        return -1;
+        flag = 1;
     }
 
     FILE* file = fopen(filename, "w");
     if (!file) {
-        perror("Ошибка открытия файла");
-        return -1;
+        flag = 2;
     }
 
     // Записываем размеры матрицы
@@ -158,18 +157,31 @@ int save_matrix_to_file(const Matrix* matrix, const char* filename) {
     }
 
     fclose(file);
-    return 0;
+    switch (flag)
+    {
+    case 1:
+        fprintf(stderr, "Ошибка: матрица не существует!\n");
+        return -1;
+        break;
+    case 2:
+        perror("Ошибка открытия файла");
+        return -1;
+        break;
+    default:
+        return 0;
+        break;
+    }
+    
 }
 Matrix* copy_matrix(const Matrix* source) {
+    int flag = 0;
     if (!source) {
-        fprintf(stderr, "Ошибка: исходная матрица не существует!\n");
-        return NULL;
+        flag = 1;
     }
 
     Matrix* copy = create_matrix(source->rows, source->cols);
     if (!copy) {
-        fprintf(stderr, "Ошибка выделения памяти для копии матрицы\n");
-        return NULL;
+        flag = 2;
     }
 
     for (int i = 0; i < source->rows; i++) {
@@ -177,8 +189,21 @@ Matrix* copy_matrix(const Matrix* source) {
             copy->data[i][j] = source->data[i][j];
         }
     }
-
-    return copy;
+    switch (flag)
+    {
+    case 1:
+        fprintf(stderr, "Ошибка: исходная матрица не существует!\n");
+        return NULL;
+        break;
+    case 2:
+        fprintf(stderr, "Ошибка выделения памяти для копии матрицы\n");
+        return NULL;
+        break;
+    default:
+        return copy;
+        break;
+    }
+    
 }
 Matrix* add_matrices(const Matrix* A, const Matrix* B) {
     if (!A || !B) {
