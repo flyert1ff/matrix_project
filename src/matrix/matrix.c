@@ -4,22 +4,20 @@
 
 Matrix *create_matrix(int rows, int cols)
 {
+    int flag = 0; 
     if(rows <= 0 || cols <= 0){
-        printf("Empty matrix");
-        return NULL;
+        flag = 1;
     }
     Matrix *matrix = (Matrix*) malloc(sizeof(Matrix));
     if(!matrix){
-        printf("allocation error - 1");
-        return NULL;
+        flag = 2;
     }
     matrix->cols = cols;
     matrix->rows = rows;
     matrix->data = (MATRIX_TYPE**)malloc(rows * sizeof(MATRIX_TYPE*));
 
     if(!matrix->data){
-        printf("allocation error - 2");
-        return NULL;
+        flag = 3;
     }
 
     for(int i = 0; i<rows; i++){
@@ -29,11 +27,31 @@ Matrix *create_matrix(int rows, int cols)
                 free(matrix->data[j]);
             free(matrix->data);
             free(matrix);
-            printf("allocation error - 3");
-            return NULL;
+            flag = 4;
         }
     }
-    return matrix;
+    switch (flag)
+    {
+    case 1:
+        printf("Empty matrix");
+        return NULL;
+        break;
+    case 2:
+        printf("allocation error - 1");
+        return NULL;
+        break;
+    case 3:
+        printf("allocation error - 2");
+        return NULL;
+        break;
+    case 4:
+        printf("allocation error - 3");
+        return NULL;
+        break;
+    default:
+        return matrix;
+        break;
+    }
 }
 
 void free_matrix(Matrix *matrix){
@@ -49,39 +67,58 @@ void free_matrix(Matrix *matrix){
 }
 
 Matrix* load_matrix_from_file(const char* filename) {
+    int flag = 0;
     FILE* file = fopen(filename, "r");
     if (!file) {
-        perror("Ошибка открытия файла");
-        return NULL;
+        flag = 1;
     }
 
     int rows, cols;
     if (fscanf(file, "%d %d", &rows, &cols) != 2 || rows <= 0 || cols <= 0) {
-        fclose(file);
-        fprintf(stderr, "Ошибка чтения размеров матрицы\n");
-        return NULL;
+        flag = 2;
     }
 
     Matrix* matrix = create_matrix(rows, cols);
     if (!matrix) {
-        fclose(file);
-        fprintf(stderr, "Ошибка выделения памяти для матрицы\n");
-        return NULL;
+        flag = 3;
     }
-
+    int rows_1 = 0;
+    int cols_1 = 0;
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             if (fscanf(file, "%lf", &matrix->data[i][j]) != 1) {
-                fprintf(stderr, "Ошибка чтения элемента матрицы [%d][%d]\n", i, j);
-                free_matrix(matrix);
-                fclose(file);
-                return NULL;
+                flag = 4;
+                i = rows;
+                rows_1 = i;
+                cols_1 = j;
             }
         }
     }
 
     fclose(file);
-    return matrix;
+    switch (flag)
+    {
+    case 1:
+        perror("Ошибка открытия файла");
+        return NULL;
+        break;
+    case 2:
+        fprintf(stderr, "Ошибка чтения размеров матрицы\n");
+        return NULL;
+        break;
+    case 3:
+        fprintf(stderr, "Ошибка выделения памяти для матрицы\n");
+        return NULL;
+        break;
+    case 4: 
+        fprintf(stderr, "Ошибка чтения элемента матрицы [%d][%d]\n", rows_1, cols_1);
+        free_matrix(matrix);
+        return NULL;
+        break;
+    default:
+        return matrix;
+        break;
+    }
 }
 void print_matrix(const Matrix* matrix) {
     if (!matrix) {
