@@ -2,52 +2,68 @@
 #include <stdlib.h>
 #include "matrix.h"
 
-Matrix *create_matrix(int rows, int cols)
-{
-    int flag = 0; 
-    if(rows <= 0 || cols <= 0) flag = 1;
-    Matrix *matrix = (Matrix*) malloc(sizeof(Matrix));
-    if(!matrix) flag = 2;
-    matrix->cols = cols;
-    matrix->rows = rows;
-    matrix->data = (MATRIX_TYPE**)malloc(rows * sizeof(MATRIX_TYPE*));
+Matrix *create_matrix(int rows, int cols) {
+    int flag = 0;  
 
-    if(!matrix->data){
-        free(matrix);
-        flag = 3;
+    if (rows <= 0 || cols <= 0) flag = 1;
+
+    Matrix *matrix = NULL;
+
+    if (!flag) {
+        matrix = (Matrix *)malloc(sizeof(Matrix));
+        if (!matrix) flag = 2;
     }
 
-    for(int i = 0; i<rows; i++){
-        matrix->data[i] = (MATRIX_TYPE*)calloc(cols, sizeof(MATRIX_TYPE));
-        if(!matrix->data[i]){
-            for(int j = 0; j<i; j++)
-                free(matrix->data[j]);
-            free(matrix->data);
-            free(matrix);
-            flag = 4;
+    if (!flag) {
+        matrix->data = (MATRIX_TYPE **)malloc(rows * sizeof(MATRIX_TYPE *));
+        if (!matrix->data) flag = 3;
+    }
+
+    if (!flag) {
+        matrix->rows = rows;
+        matrix->cols = cols;
+
+        for (int i = 0; i < rows; i++) {
+            matrix->data[i] = (MATRIX_TYPE *)calloc(cols, sizeof(MATRIX_TYPE));
+            if (!matrix->data[i]) {
+                flag = 4;
+
+                for(int j = 0; j<i; j++)
+                    free(matrix->data[j]); 
+                free(matrix->data);
+                matrix->data=NULL;
+                free(matrix);
+                matrix=NULL;
+                i = rows;
+            }
         }
     }
+
     switch (flag) {
         case 1:
-            printf("Ошибка: некорректные размеры матрицы\n");
-            return NULL;
+            fprintf(stderr, "Ошибка: некорректные размеры матрицы\n");
+            break;
         case 2:
-            printf("Ошибка выделения памяти (структура)\n");
-            return NULL;
+            fprintf(stderr, "Ошибка выделения памяти (структура)\n");
+            break;
         case 3:
-            printf("Ошибка выделения памяти (указатели)\n");
-            return NULL;
+            fprintf(stderr, "Ошибка выделения памяти (указатели)\n");
+            free(matrix);
+            break;
         case 4:
-            printf("Ошибка выделения памяти (данные)\n");
-            return NULL;
+            fprintf(stderr, "Ошибка выделения памяти (данные)\n");
+            break;
         default:
             return matrix;
     }
+
+    return NULL; 
 }
+
 
 void free_matrix(Matrix *matrix){
     if(!matrix){
-        printf("free error");
+        fprintf(stderr, "Ошибка: передан NULL-указатель в free_matrix\n");
         return;
     }
     for(int i=0; i<matrix->rows;i++)
@@ -73,9 +89,10 @@ Matrix* load_matrix_from_file(const char* filename) {
         for (int j = 0; j < cols; j++) {
             if (fscanf(file, "%lf", &matrix->data[i][j]) != 1) {
                 flag = 4;
-                i = rows;
                 rows_1 = i;
                 cols_1 = j;
+                i = rows;
+                
             }
         }
     }
@@ -169,6 +186,7 @@ Matrix* copy_matrix(const Matrix* source) {
 Matrix* add_matrices(const Matrix* A, const Matrix* B) {
     int flag = 0;
     if (!A || !B) flag = 1;
+    if (A->cols != B->rows) flag = 4;
 
     if (A->rows != B->rows || A->cols != B->cols) flag = 2;
 
@@ -190,6 +208,9 @@ Matrix* add_matrices(const Matrix* A, const Matrix* B) {
         return NULL;
     case 3:
         fprintf(stderr, "Ошибка выделения памяти для суммы матриц\n");
+        return NULL;
+    case 4:
+        fprintf(stderr, "Ошибка: количество столбцов A не равно количеству строк B!\n");
         return NULL;
     default: return result;
     }
@@ -277,7 +298,6 @@ MATRIX_TYPE determinant(const Matrix* matrix) {
             flag = 5;
             j = n;
         }
-
         for (int i = 1; i < n; i++) {
             int colIndex = 0;
             for (int k = 0; k < n; k++) {
@@ -288,6 +308,7 @@ MATRIX_TYPE determinant(const Matrix* matrix) {
         MATRIX_TYPE minorDet = determinant(minor);
         free_matrix(minor);
         det += (j % 2 == 0 ? 1 : -1) * matrix->data[0][j] * minorDet;
+    
     }
     switch (flag)
     {
