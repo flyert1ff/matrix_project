@@ -75,28 +75,36 @@ void free_matrix(Matrix *matrix){
 
 Matrix* load_matrix_from_file(const char* filename) {
     int flag = 0;
-    FILE* file = fopen(filename, "r");
+    FILE* file = NULL;
+    Matrix *matrix = NULL;
+
+    file = fopen(filename, "r");
     if (!file) flag = 1;
-
-    int rows, cols;
-    if (fscanf(file, "%d %d", &rows, &cols) != 2 || rows <= 0 || cols <= 0) flag = 2;
-
-    Matrix* matrix = create_matrix(rows, cols);
-    if (!matrix) flag = 3;
-    int rows_1 = 0;
-    int cols_1 = 0;
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            if (fscanf(file, "%lf", &matrix->data[i][j]) != 1) {
-                flag = 4;
-                rows_1 = i;
-                cols_1 = j;
-                i = rows;
-                
+    else {
+        int rows, cols;
+        if (fscanf(file, "%d %d", &rows, &cols) != 2 || rows <= 0 || cols <= 0) flag = 2;
+        else{
+            matrix = create_matrix(rows, cols);
+            if (!matrix) flag = 3;
+            else{
+                for (int i = 0; i < rows; i++) {
+                    for (int j = 0; j < cols; j++) {
+                        if (fscanf(file, "%lf", &matrix->data[i][j]) != 1) {
+                            flag = 4;
+                            i = rows;
+                            j = cols;
+                        }
+                    }
+                }
+                if(flag == 0){
+                    double extra_data;
+                    if(fscanf(file, "%lf", &extra_data)!= EOF)
+                        fprintf(stderr, "Предупреждение: файл содержит лишние данные\n");
+                }
             }
         }
+        fclose(file);
     }
-    fclose(file);
     switch (flag) {
         case 1:
             perror("Ошибка открытия файла");
@@ -110,9 +118,10 @@ Matrix* load_matrix_from_file(const char* filename) {
         case 4:
             fprintf(stderr, "Ошибка чтения данных матрицы\n");
             free_matrix(matrix);
+            matrix = NULL;
             return NULL;
         default:
-            return matrix;
+        return matrix;
     }
 }
 void print_matrix(const Matrix* matrix) {
