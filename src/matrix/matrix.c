@@ -287,55 +287,51 @@ MATRIX_TYPE determinant(const Matrix* matrix) {
     int flag = 0;
     if (!matrix) flag = 1;
 
-    if (matrix->rows != matrix->cols) flag = 2;
+    if (flag == 0 && matrix->rows != matrix->cols) flag = 2;
 
-    int n = matrix->rows;
+    int n = (flag == 0) ? matrix->rows : 0;
 
-    // Определитель 1×1 матрицы
-    if (n == 1) flag = 3;
+    // Базовые случаи
+    if (flag == 0 && n == 1) return matrix->data[0][0];
+    if (flag == 0 && n == 2) return matrix->data[0][0] * matrix->data[1][1] - 
+                                   matrix->data[0][1] * matrix->data[1][0];
 
-    // Определитель 2×2 матрицы
-    if (n == 2) flag = 4;
-        
     MATRIX_TYPE det = 0;
 
-    // Рекурсивное разложение по первой строке
-    for (int j = 0; j < n; j++) {
-        // Создаём подматрицу (n-1) × (n-1)
+    for (int j = 0; flag == 0 && j < n; j++) {
         Matrix* minor = create_matrix(n - 1, n - 1);
         if (!minor) {
-            flag = 5;
-            j = n;
-        }
-        for (int i = 1; i < n; i++) {
-            int colIndex = 0;
-            for (int k = 0; k < n; k++) {
-                if (k != j) minor->data[i - 1][colIndex++] = matrix->data[i][k];
+            flag = 3;
+            j = n; 
+        } else {
+            for (int i = 1; i < n; i++) {
+                int colIndex = 0;
+                for (int k = 0; k < n; k++) {
+                    if (k != j) {
+                        minor->data[i - 1][colIndex++] = matrix->data[i][k];
+                    }
+                }
             }
-        }
 
-        MATRIX_TYPE minorDet = determinant(minor);
-        free_matrix(minor);
-        det += (j % 2 == 0 ? 1 : -1) * matrix->data[0][j] * minorDet;
-    
+            MATRIX_TYPE minorDet = determinant(minor);
+            free_matrix(minor);
+            det += (j % 2 == 0 ? 1 : -1) * matrix->data[0][j] * minorDet;
+        }
     }
-    switch (flag)
-    {
-    case 1:
-        fprintf(stderr, "Ошибка: матрица не существует!\n");
-        return 0;
-    case 2:
-        fprintf(stderr, "Ошибка: матрица не квадратная!\n");
-        return 0;
-    case 3: return matrix->data[0][0];
-    case 4: return matrix->data[0][0] * matrix->data[1][1] - 
-                   matrix->data[0][1] * matrix->data[1][0];
-    case 5:
-        fprintf(stderr, "Ошибка выделения памяти для миноров\n");
-        return 0;
-    
-    default: return det;
+
+    switch (flag) {
+        case 1:
+            fprintf(stderr, "Ошибка: матрица не существует!\n");
+            return 0;
+        case 2:
+            fprintf(stderr, "Ошибка: матрица не квадратная!\n");
+            return 0;
+        case 3:
+            fprintf(stderr, "Ошибка выделения памяти для миноров\n");
+            return 0;
+        default:
+            return det;
     }
-    
 }
+
 
