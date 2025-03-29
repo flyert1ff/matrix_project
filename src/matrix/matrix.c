@@ -296,27 +296,34 @@ MATRIX_TYPE determinant(const Matrix* matrix) {
                                    matrix->data[0][1] * matrix->data[1][0];
 
     MATRIX_TYPE det = 0;
+    Matrix** minors = (Matrix**)malloc(n * sizeof(Matrix*));
+    if (!minors) flag = 4;
+    else{
+        for (int j = 0; j < n; j++) minors[j] = NULL;
 
-    for (int j = 0; flag == 0 && j < n; j++) {
-        Matrix* minor = create_matrix(n - 1, n - 1);
-        if (!minor) {
-            flag = 3;
-            j = n; 
-        } else {
-            for (int i = 1; i < n; i++) {
-                int colIndex = 0;
-                for (int k = 0; k < n; k++) {
-                    if (k != j) {
-                        minor->data[i - 1][colIndex++] = matrix->data[i][k];
-                    }
-                }
+        for (int j = 0; j < n; j++) {
+            minors[j] = create_matrix(n - 1, n - 1);
+            if (!minors[j]) {
+                flag = 3;
+                break;
             }
 
-            MATRIX_TYPE minorDet = determinant(minor);
-            free_matrix(minor);
+            // Заполнение минора
+            for (int i = 1; i < n; i++) {
+                int colIndex = 0;
+                for (int k = 0; k < n; k++) 
+                    if (k != j) minors[j]->data[i - 1][colIndex++] = matrix->data[i][k];
+                
+            }
+
+            MATRIX_TYPE minorDet = determinant(minors[j]);
             det += (j % 2 == 0 ? 1 : -1) * matrix->data[0][j] * minorDet;
         }
     }
+    // Освобождение памяти
+    for (int j = 0; j < n; j++) 
+        if (minors[j]) free_matrix(minors[j]);
+    free(minors);
 
     switch (flag) {
         case 1:
@@ -328,9 +335,13 @@ MATRIX_TYPE determinant(const Matrix* matrix) {
         case 3:
             fprintf(stderr, "Ошибка выделения памяти для миноров\n");
             return 0;
+        case 4:
+            fprintf(stderr, "Ошибка: не удалось выделить память для массива миноров\n");
+            return 0;
         default:
             return det;
     }
 }
+
 
 
