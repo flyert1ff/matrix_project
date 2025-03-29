@@ -195,7 +195,6 @@ Matrix* copy_matrix(const Matrix* source) {
 Matrix* add_matrices(const Matrix* A, const Matrix* B) {
     int flag = 0;
     if (!A || !B) flag = 1;
-    if (A->cols != B->rows) flag = 4;
 
     if (A->rows != B->rows || A->cols != B->cols) flag = 2;
 
@@ -223,7 +222,7 @@ Matrix* add_matrices(const Matrix* A, const Matrix* B) {
         return NULL;
     default: return result;
     }
-    
+    return NULL;
 }
 Matrix* multiply_matrices(const Matrix* A, const Matrix* B) {
     int flag = 0;
