@@ -6,10 +6,10 @@ int main(void) {
     Matrix *A = NULL, *B = NULL, *C = NULL, *D = NULL;
     Matrix *sumAB = NULL, *Ct = NULL, *M = NULL, *result = NULL;
 
-    A = load_matrix_from_file("data/A.txt");
-    B = load_matrix_from_file("data/B.txt");
-    C = load_matrix_from_file("data/C.txt");
-    D = load_matrix_from_file("data/D.txt");
+    A = load_matrix_from_file("build/A.txt");
+    B = load_matrix_from_file("build/B.txt");
+    C = load_matrix_from_file("build/C.txt");
+    D = load_matrix_from_file("build/D.txt");
 
     if (!A || !B || !C || !D) {
         output("Ошибка загрузки матриц. Проверьте файлы в папке data/.\n");
