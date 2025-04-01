@@ -224,7 +224,7 @@ Matrix* add_matrices(const Matrix* A, const Matrix* B) {
     }
     return NULL;
 }
-Matrix* add_matrices(const Matrix* A, const Matrix* B) {
+Matrix* subtract_matrices(const Matrix* A, const Matrix* B) {
     int flag = 0;
     if (!A || !B) flag = 1;
 
