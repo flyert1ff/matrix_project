@@ -24,9 +24,7 @@ void output(const char *format, ...) {
 
 int open_output_file(const char *filename, const char *mode) {
     pthread_mutex_lock(&output_mutex);
-    if (file_stream) {
-        fclose(file_stream);
-    }
+    if (file_stream)fclose(file_stream);
     file_stream = fopen(filename, mode);
     pthread_mutex_unlock(&output_mutex);
     return file_stream ? 0 : -1;

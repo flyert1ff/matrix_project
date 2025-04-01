@@ -224,6 +224,38 @@ Matrix* add_matrices(const Matrix* A, const Matrix* B) {
     }
     return NULL;
 }
+Matrix* add_matrices(const Matrix* A, const Matrix* B) {
+    int flag = 0;
+    if (!A || !B) flag = 1;
+
+    if (A->rows != B->rows || A->cols != B->cols) flag = 2;
+
+    Matrix* result = create_matrix(A->rows, A->cols);
+    if (!result) flag = 3;
+
+    for (int i = 0; i < A->rows; i++) {
+        for (int j = 0; j < A->cols; j++) 
+            result->data[i][j] = A->data[i][j] - B->data[i][j];
+        
+    }
+    switch (flag)
+    {
+    case 1:
+        fprintf(stderr, "Ошибка: одна из матриц не существует!\n");
+        return NULL;
+    case 2:
+        fprintf(stderr, "Ошибка: размерности матриц не совпадают!\n");
+        return NULL;
+    case 3:
+        fprintf(stderr, "Ошибка выделения памяти для суммы матриц\n");
+        return NULL;
+    case 4:
+        fprintf(stderr, "Ошибка: количество столбцов A не равно количеству строк B!\n");
+        return NULL;
+    default: return result;
+    }
+    return NULL;
+}
 Matrix* multiply_matrices(const Matrix* A, const Matrix* B) {
     int flag = 0;
     if (!A || !B) flag = 1;
