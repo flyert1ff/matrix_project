@@ -3,43 +3,41 @@
 #include "matrix.h"
 
 Matrix *create_matrix(int rows, int cols) {
-    int flag = 0;  
-
-    if (rows <= 0 || cols <= 0) flag = 1;
-
+    int flag = 0;
     Matrix *matrix = NULL;
 
-    if (!flag) {
+    if (rows <= 0 || cols <= 0) flag = 1;
+    else {
         matrix = (Matrix *)malloc(sizeof(Matrix));
-        if (!matrix) flag = 2;
-    }
-
-    if (!flag) {
-        matrix->data = (MATRIX_TYPE **)malloc(rows * sizeof(MATRIX_TYPE *));
-        if (!matrix->data) flag = 3;
-    }
-
-    if (!flag) {
-        matrix->rows = rows;
-        matrix->cols = cols;
-
-        for (int i = 0; i < rows; i++) {
-            matrix->data[i] = (MATRIX_TYPE *)calloc(cols, sizeof(MATRIX_TYPE));
-            if (!matrix->data[i]) {
-                flag = 4;
-
-                for(int j = 0; j<i; j++)
-                    free(matrix->data[j]); 
-                free(matrix->data);
-                matrix->data=NULL;
-                free(matrix);
-                matrix=NULL;
-                i = rows;
+        if (!matrix) flag = 2; 
+        else {
+            matrix->data = (MATRIX_TYPE **)malloc(rows * sizeof(MATRIX_TYPE *));
+            if (!matrix->data) {
+                flag = 3;
+                free_matrix(matrix);
+                matrix = NULL;
+            } else {
+                matrix->rows = rows;
+                matrix->cols = cols;
+                for (int i = 0; i < rows; i++) {
+                    matrix->data[i] = (MATRIX_TYPE *)calloc(cols, sizeof(MATRIX_TYPE));
+                    if (!matrix->data[i]) {
+                        flag = 4;
+                        for (int j = 0; j < i; j++) 
+                            free(matrix->data[j]);
+                        free(matrix->data);
+                        free_matrix(matrix);
+                        matrix = NULL;
+                        i = rows;
+                    }
+                }
             }
         }
     }
 
     switch (flag) {
+        case 0:
+            return matrix; 
         case 1:
             fprintf(stderr, "Ошибка: некорректные размеры матрицы\n");
             break;
@@ -48,16 +46,12 @@ Matrix *create_matrix(int rows, int cols) {
             break;
         case 3:
             fprintf(stderr, "Ошибка выделения памяти (указатели)\n");
-            free(matrix);
             break;
         case 4:
             fprintf(stderr, "Ошибка выделения памяти (данные)\n");
             break;
-        default:
-            return matrix;
     }
-
-    return NULL; 
+    return NULL;
 }
 
 
@@ -66,10 +60,13 @@ void free_matrix(Matrix *matrix){
         fprintf(stderr, "Ошибка: передан NULL-указатель в free_matrix\n");
         return;
     }
-    for(int i=0; i<matrix->rows;i++)
-        free(matrix->data[i]);
-
-    free(matrix->data);
+    if(matrix->data){
+        for(int i=0; i<matrix->rows;i++){
+            if(matrix->data[i])free(matrix->data[i]);
+        }
+        free(matrix->data);
+    }
+    
     free(matrix);
 }
 
@@ -98,8 +95,11 @@ Matrix* load_matrix_from_file(const char* filename) {
                 }
                 if(flag == 0){
                     double extra_data;
-                    if(fscanf(file, "%lf", &extra_data)!= EOF)
+                    if(fscanf(file, "%lf", &extra_data)!= EOF){
                         fprintf(stderr, "Предупреждение: файл содержит лишние данные\n");
+                        free_matrix(matrix);
+                        matrix = NULL;
+                    }
                 }
             }
         }
@@ -121,8 +121,9 @@ Matrix* load_matrix_from_file(const char* filename) {
             matrix = NULL;
             return NULL;
         default:
-        return matrix;
+            return matrix;
     }
+    return NULL;
 }
 void print_matrix(const Matrix* matrix) {
     if (!matrix) {
@@ -144,14 +145,14 @@ int save_matrix_to_file(const Matrix* matrix, const char* filename) {
     FILE* file = fopen(filename, "w");
     if (!file) flag = 2;
 
-    // Записываем размеры матрицы
-    fprintf(file, "%d %d\n", matrix->rows, matrix->cols);
+    if(flag!=1 && flag != 2){
+        fprintf(file, "%d %d\n", matrix->rows, matrix->cols);
 
-    // Записываем элементы матрицы
-    for (int i = 0; i < matrix->rows; i++) {
-        for (int j = 0; j < matrix->cols; j++)
-            fprintf(file, "%.2lf ", matrix->data[i][j]);
-        fprintf(file, "\n");
+        for (int i = 0; i < matrix->rows; i++) {
+            for (int j = 0; j < matrix->cols; j++)
+                fprintf(file, "%.2lf ", matrix->data[i][j]);
+            fprintf(file, "\n");
+        }
     }
 
     fclose(file);
@@ -194,79 +195,101 @@ Matrix* copy_matrix(const Matrix* source) {
 }
 Matrix* add_matrices(const Matrix* A, const Matrix* B) {
     int flag = 0;
-    if (!A || !B) flag = 1;
+    if (!A || !B || (A && !A->data) || (B && !B->data)) flag = 1;
 
-    if (A->rows != B->rows || A->cols != B->cols) flag = 2;
+    if (!flag && (A->rows != B->rows || A->cols != B->cols)) flag = 2;
 
-    Matrix* result = create_matrix(A->rows, A->cols);
-    if (!result) flag = 3;
+    Matrix *result = NULL;
+    if(!flag){
+        result = create_matrix(A->rows, A->cols);
+        if (!result) flag = 3;
+    }
 
+    if(flag){
+        switch (flag)
+        {
+        case 1:
+            fprintf(stderr, "Ошибка: одна из матриц не существует!\n");
+            break;
+        case 2:
+            fprintf(stderr, "Ошибка: размерности матриц не совпадают!\n");
+            break;
+        case 3:
+            fprintf(stderr, "Ошибка выделения памяти для суммы матриц\n");
+            if(result)free_matrix(result);
+            break;
+        }
+        return NULL;
+    }
     for (int i = 0; i < A->rows; i++) {
         for (int j = 0; j < A->cols; j++) 
-            result->data[i][j] = A->data[i][j] + B->data[i][j];
-        
+            result->data[i][j] = A->data[i][j] + B->data[i][j];  
     }
-    switch (flag)
-    {
-    case 1:
-        fprintf(stderr, "Ошибка: одна из матриц не существует!\n");
-        return NULL;
-    case 2:
-        fprintf(stderr, "Ошибка: размерности матриц не совпадают!\n");
-        return NULL;
-    case 3:
-        fprintf(stderr, "Ошибка выделения памяти для суммы матриц\n");
-        return NULL;
-    case 4:
-        fprintf(stderr, "Ошибка: количество столбцов A не равно количеству строк B!\n");
-        return NULL;
-    default: return result;
-    }
-    return NULL;
+    return result;
 }
 Matrix* subtract_matrices(const Matrix* A, const Matrix* B) {
     int flag = 0;
-    if (!A || !B) flag = 1;
+    if (!A || !B || (A && !A->data) || (B && !B->data)) flag = 1;
 
-    if (A->rows != B->rows || A->cols != B->cols) flag = 2;
+    if (!flag && (A->rows != B->rows || A->cols != B->cols)) flag = 2;
 
-    Matrix* result = create_matrix(A->rows, A->cols);
-    if (!result) flag = 3;
+    Matrix *result = NULL;
+    if(!flag){
+        result = create_matrix(A->rows, A->cols);
+        if (!result) flag = 3;
+    }
 
+    if(flag){
+        switch (flag)
+        {
+        case 1:
+            fprintf(stderr, "Ошибка: одна из матриц не существует!\n");
+            break;
+        case 2:
+            fprintf(stderr, "Ошибка: размерности матриц не совпадают!\n");
+            break;
+        case 3:
+            fprintf(stderr, "Ошибка выделения памяти для суммы матриц\n");
+            if(result)free_matrix(result);
+            break;
+        }
+        return NULL;
+}
     for (int i = 0; i < A->rows; i++) {
         for (int j = 0; j < A->cols; j++) 
-            result->data[i][j] = A->data[i][j] - B->data[i][j];
-        
+            result->data[i][j] = A->data[i][j] - B->data[i][j];  
     }
-    switch (flag)
-    {
-    case 1:
-        fprintf(stderr, "Ошибка: одна из матриц не существует!\n");
-        return NULL;
-    case 2:
-        fprintf(stderr, "Ошибка: размерности матриц не совпадают!\n");
-        return NULL;
-    case 3:
-        fprintf(stderr, "Ошибка выделения памяти для суммы матриц\n");
-        return NULL;
-    case 4:
-        fprintf(stderr, "Ошибка: количество столбцов A не равно количеству строк B!\n");
-        return NULL;
-    default: return result;
-    }
-    return NULL;
+    return result;
 }
 Matrix* multiply_matrices(const Matrix* A, const Matrix* B) {
     int flag = 0;
-    if (!A || !B) flag = 1;
+    if (!A || !B || (A && !A->data) || (B && !B->data)) flag = 1;
 
     if (A->cols != B->rows) flag = 2;
     
 
-    Matrix* C = create_matrix(A->rows, B->cols);
-    if (!C) flag = 3;
-    
-
+    Matrix* C = NULL;
+    if(flag){
+        C = create_matrix(A->rows, B->cols);
+        if (!C) flag = 3;
+    }
+    if(flag){
+        switch (flag)
+        {
+        case 1:
+            fprintf(stderr, "Ошибка: одна из матриц не существует!\n");
+            break;
+        case 2:
+            fprintf(stderr, "Ошибка: количество столбцов A не равно количеству строк B!\n");
+            break;
+        case 3:
+            fprintf(stderr, "Ошибка выделения памяти для произведения матриц\n");
+            if(C)free_matrix(C);
+            break;
+        }
+        if(C)free_matrix(C);
+        return NULL;
+    }
     for (int i = 0; i < A->rows; i++) {
         for (int j = 0; j < B->cols; j++) {
             C->data[i][j] = 0;
@@ -275,44 +298,47 @@ Matrix* multiply_matrices(const Matrix* A, const Matrix* B) {
             
         }
     }
-    switch (flag)
-    {
-    case 1:
-        fprintf(stderr, "Ошибка: одна из матриц не существует!\n");
-        return NULL;
-    case 2:
-        fprintf(stderr, "Ошибка: количество столбцов A не равно количеству строк B!\n");
-        return NULL;
-    case 3:
-        fprintf(stderr, "Ошибка выделения памяти для произведения матриц\n");
-        return NULL;
-    default: return C;
-    }
-    
+    return C;
 }
 Matrix* transpose_matrix(const Matrix* matrix) {
     int flag = 0;
-    if (!matrix) flag = 1;
+    if (matrix->rows <= 0 || matrix->cols <= 0 || !matrix->data) flag = 1;
 
-    Matrix* transposed = create_matrix(matrix->cols, matrix->rows);
-    if (!transposed) flag = 2;
 
-    for (int i = 0; i < matrix->rows; i++) {
-        for (int j = 0; j < matrix->cols; j++) 
-            transposed->data[j][i] = matrix->data[i][j];
-        
+
+    Matrix *transposed = NULL;
+    if(!flag){
+        transposed = create_matrix(matrix->cols, matrix->rows);
+        if (!transposed) flag = 2;
+    }
+    if(!flag){
+        for (int i = 0; i < matrix->rows; i++) {
+            if(!matrix->data[i]){
+                flag = 3;
+                i = matrix->rows;
+            }
+            for (int j = 0; j < matrix->cols; j++) 
+                transposed->data[j][i] = matrix->data[i][j];
+            
+        }
     }
     switch (flag)
     {
     case 1:
         fprintf(stderr, "Ошибка: матрица не существует!\n");
-        return NULL;
+        break;
     case 2:
         fprintf(stderr, "Ошибка выделения памяти для транспонированной матрицы\n");
-        return NULL;
-    default: return transposed;
+        free_matrix(transposed);
+        transposed = NULL;
+        break;
+    case 3:
+        fprintf(stderr, "Ошибка: повреждены данные исходной матрицы!\n");
+        free_matrix(transposed);
+        transposed = NULL;
+        break;
     }
-    
+    return transposed;
 }
 MATRIX_TYPE determinant(const Matrix* matrix) {
     int flag = 0;
@@ -337,7 +363,10 @@ MATRIX_TYPE determinant(const Matrix* matrix) {
             minors[j] = create_matrix(n - 1, n - 1);
             if (!minors[j]) {
                 flag = 3;
-                break;
+                for(int k = 0; k<j;k++)
+                    free_matrix(minors[k]);
+                free(minors);
+                return 0;
             }
 
             // Заполнение минора
